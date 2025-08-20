@@ -48,7 +48,6 @@ var (
 	clients   = make(map[*websocket.Conn]bool)
 	broadcast = make(chan Message)
 
-	// Prometheus метрики
 	httpRequestsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "http_requests_total",
@@ -177,7 +176,6 @@ func handleWebSocket(c *websocket.Conn) {
 			break
 		}
 
-		// Сохраняем сообщение в БД
 		msg.CreatedAt = time.Now()
 		if err := saveMessage(&msg); err != nil {
 			log.Println("Error saving message:", err)
