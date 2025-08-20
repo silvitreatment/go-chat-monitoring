@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Чат - Обмен сообщениями</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            width: 800px;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            padding: 20px;
+            color: white;
+            text-align: center;
+        }
+
+        .chat-header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .status {
+            margin-top: 5px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .messages-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f8f9fa;
+        }
+
+        .message {
+            background: white;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            border-radius: 12px;
+            border-left: 4px solid #4facfe;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .username {
+            font-weight: 600;
+            color: #4facfe;
+        }
+
+        .timestamp {
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .message-content {
+            color: #333;
+            line-height: 1.4;
+        }
+
+        .input-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .user-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .user-form input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .user-form input:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+
+        .message-form {
+            display: flex;
+            gap: 10px;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 24px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+        }
+
+        .message-input:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+
+        .send-btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            border-radius: 24px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .send-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .send-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error-message {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .no-messages {
+            text-align: center;
+            color: #6c757d;
+            padding: 40px;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .chat-container {
+                width: 95%;
+                height: 90vh;
+            }
+            
+            .user-form {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>💬 Чат</h1>
+            <div class="status" id="status">Подключение...</div>
+            <div class="stats">
+                <span id="message-count">Сообщений: 0</span>
+                <span id="user-count">Пользователей: 0</span>
+                <span id="connections">Подключений: 0</span>
+            </div>
+        </div>
+
+        <div class="messages-container" id="messages">
+            <div class="no-messages">Сообщений пока нет. Начните общение!</div>
+        </div>
+
+        <div class="input-container">
+            <div class="user-form">
+                <input type="text" id="username" placeholder="Ваше имя" maxlength="50">
+                <input type="number" id="userId" placeholder="ID пользователя" min="1">
+            </div>
+            
+            <div class="message-form">
+                <input type="text" id="messageInput" class="message-input" 
+                       placeholder="Введите сообщение..." maxlength="1000" disabled>
+                <button class="send-btn" id="sendBtn" disabled>Отправить</button>
+            </div>
+            
+            <div class="error-message" id="errorMessage"></div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let isConnected = false;
+
+        const elements = {
+            status: document.getElementById('status'),
+            messages: document.getElementById('messages'),
+            username: document.getElementById('username'),
+            userId: document.getElementById('userId'),
+            messageInput: document.getElementById('messageInput'),
+            sendBtn: document.getElementById('sendBtn'),
+            errorMessage: document.getElementById('errorMessage'),
+            messageCount: document.getElementById('message-count'),
+            userCount: document.getElementById('user-count'),
+            connections: document.getElementById('connections')
+        };
+
+        function showError(message) {
+            elements.errorMessage.textContent = message;
+            setTimeout(() => {
+                elements.errorMessage.textContent = '';
+            }, 5000);
+        }
+
+        function updateStats() {
+            fetch('/stats')
+                .then(response => response.json())
+                .then(data => {
+                    elements.messageCount.textContent = `Сообщений: ${data.messages}`;
+                    elements.userCount.textContent = `Пользователей: ${data.users}`;
+                    elements.connections.textContent = `Подключений: ${data.active_connections}`;
+                })
+                .catch(() => {});
+        }
+
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
+            
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = function() {
+                isConnected = true;
+                elements.status.textContent = '✅ Подключено';
+                elements.status.style.color = '#28a745';
+                checkFormValid();
+                updateStats();
+            };
+
+            ws.onmessage = function(event) {
+                try {
+                    const message = JSON.parse(event.data);
+                    addMessage(message);
+                    updateStats();
+                } catch (error) {
+                    console.error('Ошибка парсинга сообщения:', error);
+                }
+            };
+
+            ws.onclose = function() {
+                isConnected = false;
+                elements.status.textContent = '❌ Отключено';
+                elements.status.style.color = '#dc3545';
+                elements.messageInput.disabled = true;
+                elements.sendBtn.disabled = true;
+                
+                setTimeout(connectWebSocket, 3000);
+            };
+
+            ws.onerror = function(error) {
+                console.error('WebSocket ошибка:', error);
+                showError('Ошибка подключения к серверу');
+            };
+        }
+
+        function addMessage(message) {
+            if (elements.messages.querySelector('.no-messages')) {
+                elements.messages.innerHTML = '';
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            
+            const timestamp = new Date(message.created_at).toLocaleString('ru-RU');
+            
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <span class="username">${escapeHtml(message.username)}</span>
+                    <span class="timestamp">${timestamp}</span>
+                </div>
+                <div class="message-content">${escapeHtml(message.content)}</div>
+            `;
+
+            elements.messages.appendChild(messageDiv);
+            elements.messages.scrollTop = elements.messages.scrollHeight;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function checkFormValid() {
+            const hasUsername = elements.username.value.trim().length >= 3;
+            const hasUserId = elements.userId.value && elements.userId.value > 0;
+            const hasMessage = elements.messageInput.value.trim().length > 0;
+            
+            const isValid = isConnected && hasUsername && hasUserId;
+            elements.messageInput.disabled = !isValid;
+            elements.sendBtn.disabled = !isValid || !hasMessage;
+        }
+
+        function sendMessage() {
+            if (!isConnected) {
+                showError('Нет подключения к серверу');
+                return;
+            }
+
+            const username = elements.username.value.trim();
+            const userId = parseInt(elements.userId.value);
+            const content = elements.messageInput.value.trim();
+
+            if (!username || !userId || !content) {
+                showError('Заполните все поля');
+                return;
+            }
+
+            const message = {
+                user_id: userId,
+                username: username,
+                content: content
+            };
+
+            try {
+                ws.send(JSON.stringify(message));
+                elements.messageInput.value = '';
+                checkFormValid();
+            } catch (error) {
+                console.error('Ошибка отправки сообщения:', error);
+                showError('Ошибка отправки сообщения');
+            }
+        }
+
+        function loadRecentMessages() {
+            fetch('/api/v1/messages?limit=20')
+                .then(response => response.json())
+                .then(messages => {
+                    if (messages && messages.length > 0) {
+                        elements.messages.innerHTML = '';
+                        messages.reverse().forEach(message => {
+                            addMessage(message);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка загрузки сообщений:', error);
+                });
+        }
+
+        elements.username.addEventListener('input', checkFormValid);
+        elements.userId.addEventListener('input', checkFormValid);
+        elements.messageInput.addEventListener('input', checkFormValid);
+
+        elements.messageInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter' && !elements.sendBtn.disabled) {
+                sendMessage();
+            }
+        });
+
+        elements.sendBtn.addEventListener('click', sendMessage);
+
+        connectWebSocket();
+        loadRecentMessages();
+        
+        setInterval(updateStats, 30000);
+    </script>
+</body>
+</html>
